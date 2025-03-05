@@ -11,24 +11,21 @@ class Token:
 
 
 # Token types
-INTEGER, PLUS, MINUS, EOF = 'INTEGER', 'PLUS', 'MINUS', 'EOF'
+INTEGER, PLUS, MINUS, MUL, DIV, EOF = 'INTEGER', 'PLUS', 'MINUS', 'MUL', 'DIV', 'EOF'
 
 
 class Lexer:
     def __init__(self, text):
         self.text = text
         self.pos = 0
-        self.current_char = self.text[self.pos]
+        self.current_char = self.text[self.pos] if self.text else None
 
     def error(self):
         raise Exception('Invalid character')
 
     def advance(self):
         self.pos += 1
-        if self.pos > len(self.text) - 1:
-            self.current_char = None  # End of input
-        else:
-            self.current_char = self.text[self.pos]
+        self.current_char = self.text[self.pos] if self.pos < len(self.text) else None
 
     def skip_whitespace(self):
         while self.current_char is not None and self.current_char.isspace():
@@ -54,6 +51,12 @@ class Lexer:
             if self.current_char == '-':
                 self.advance()
                 return Token(MINUS, '-')
+            if self.current_char == '*':
+                self.advance()
+                return Token(MUL, '*')
+            if self.current_char == '/':
+                self.advance()
+                return Token(DIV, '/')
             self.error()
         return Token(EOF, None)
 
@@ -72,33 +75,30 @@ class Interpreter:
         else:
             self.error()
 
+    def term(self):
+        token = self.current_token
+        self.eat(INTEGER)
+        return token.value
+
     def expr(self):
-        # Expect an INTEGER
-        left = self.current_token
-        self.eat(INTEGER)
-
-        # Expect either PLUS or MINUS
-        op = self.current_token
-        if op.type == PLUS:
-            self.eat(PLUS)
-        elif op.type == MINUS:
-            self.eat(MINUS)
-
-        # Expect another INTEGER
-        right = self.current_token
-        self.eat(INTEGER)
-
-        # Perform the calculation and return result
-        if op.type == PLUS:
-            return left.value + right.value
-        else:
-            return left.value - right.value
+        result = self.term()
+        while self.current_token.type in (PLUS, MINUS):
+            op = self.current_token
+            if op.type == PLUS:
+                self.eat(PLUS)
+                result += self.term()
+            elif op.type == MINUS:
+                self.eat(MINUS)
+                result -= self.term()
+        return result
 
 
 def main():
     while True:
         try:
             text = input("calc> ")
+            if not text:
+                continue
             interpreter = Interpreter(text)
             result = interpreter.expr()
             print(result)
