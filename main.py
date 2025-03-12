@@ -10,7 +10,6 @@ class Token:
         return self.__str__()
 
 
-# Token types
 INTEGER, PLUS, MINUS, MUL, DIV, EOF = 'INTEGER', 'PLUS', 'MINUS', 'MUL', 'DIV', 'EOF'
 
 
@@ -75,10 +74,22 @@ class Interpreter:
         else:
             self.error()
 
-    def term(self):
+    def factor(self):
         token = self.current_token
         self.eat(INTEGER)
         return token.value
+
+    def term(self):
+        result = self.factor()
+        while self.current_token.type in (MUL, DIV):
+            op = self.current_token
+            if op.type == MUL:
+                self.eat(MUL)
+                result *= self.factor()
+            elif op.type == DIV:
+                self.eat(DIV)
+                result /= self.factor()
+        return result
 
     def expr(self):
         result = self.term()
@@ -90,7 +101,7 @@ class Interpreter:
             elif op.type == MINUS:
                 self.eat(MINUS)
                 result -= self.term()
-        return result
+        return int(result) if result.is_integer() else result
 
 
 def main():
@@ -101,7 +112,7 @@ def main():
                 continue
             interpreter = Interpreter(text)
             result = interpreter.expr()
-            print(result)
+            print(int(result) if isinstance(result, float) and result.is_integer() else result)
         except Exception as e:
             print(e)
 
