@@ -10,7 +10,7 @@ class Token:
         return self.__str__()
 
 
-INTEGER, PLUS, MINUS, MUL, DIV, EOF = 'INTEGER', 'PLUS', 'MINUS', 'MUL', 'DIV', 'EOF'
+INTEGER, PLUS, MINUS, MUL, DIV, EOF = ( 'INTEGER', 'PLUS', 'MINUS', 'MUL', 'DIV', 'EOF' )
 
 
 class Lexer:
@@ -80,6 +80,7 @@ class Interpreter:
         return token.value
 
     def term(self):
+        """term : factor ((MUL | DIV) factor)*"""
         result = self.factor()
         while self.current_token.type in (MUL, DIV):
             op = self.current_token
@@ -92,6 +93,14 @@ class Interpreter:
         return result
 
     def expr(self):
+        """Arithmetic expression parser / interpreter.
+        
+        calc> 14 + 2 * 3 - 6 / 2
+        17
+        expr  : term ((PLUS | MINUS) term)*
+        term  : factor ((MUL | DIV) factor)*
+        factor: INTEGER
+        """
         result = self.term()
         while self.current_token.type in (PLUS, MINUS):
             op = self.current_token
@@ -102,6 +111,8 @@ class Interpreter:
                 self.eat(MINUS)
                 result -= self.term()
         return int(result) if result.is_integer() else result
+        
+    
 
 
 def main():
