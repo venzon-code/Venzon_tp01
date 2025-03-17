@@ -9,9 +9,9 @@ class Token:
     def __repr__(self):
         return self.__str__()
 
-
-INTEGER, PLUS, MINUS, MUL, DIV, EOF = ( 'INTEGER', 'PLUS', 'MINUS', 'MUL', 'DIV', 'EOF' )
-
+INTEGER, PLUS, MINUS, MUL, DIV, LPAREN, RPAREN, EOF = (
+    'INTEGER', 'PLUS', 'MINUS', 'MUL', 'DIV', 'LPAREN', 'RPAREN', 'EOF'
+)
 
 class Lexer:
     def __init__(self, text):
@@ -56,9 +56,14 @@ class Lexer:
             if self.current_char == '/':
                 self.advance()
                 return Token(DIV, '/')
+            if self.current_char == '(':
+                self.advance()
+                return Token(LPAREN, '(')
+            if self.current_char == ')':
+                self.advance()
+                return Token(RPAREN, ')')
             self.error()
         return Token(EOF, None)
-
 
 class Interpreter:
     def __init__(self, text):
@@ -75,9 +80,16 @@ class Interpreter:
             self.error()
 
     def factor(self):
+        """factor : INTEGER | LPAREN expr RPAREN"""
         token = self.current_token
-        self.eat(INTEGER)
-        return token.value
+        if token.type == INTEGER:
+            self.eat(INTEGER)
+            return token.value
+        elif token.type == LPAREN:
+            self.eat(LPAREN)
+            result = self.expr()
+            self.eat(RPAREN)
+            return result
 
     def term(self):
         """term : factor ((MUL | DIV) factor)*"""
@@ -93,14 +105,7 @@ class Interpreter:
         return result
 
     def expr(self):
-        """Arithmetic expression parser / interpreter.
-        
-        calc> 14 + 2 * 3 - 6 / 2
-        17
-        expr  : term ((PLUS | MINUS) term)*
-        term  : factor ((MUL | DIV) factor)*
-        factor: INTEGER
-        """
+        """expr : term ((PLUS | MINUS) term)*"""
         result = self.term()
         while self.current_token.type in (PLUS, MINUS):
             op = self.current_token
@@ -111,8 +116,6 @@ class Interpreter:
                 self.eat(MINUS)
                 result -= self.term()
         return int(result) if result.is_integer() else result
-        
-    
 
 
 def main():
@@ -126,7 +129,6 @@ def main():
             print(int(result) if isinstance(result, float) and result.is_integer() else result)
         except Exception as e:
             print(e)
-
 
 if __name__ == '__main__':
     main()
